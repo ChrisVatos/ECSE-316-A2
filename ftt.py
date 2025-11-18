@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib as plt
+import cv2
 
 
 def dft(arr: np.ndarray) -> np.ndarray:
@@ -53,23 +54,39 @@ def inverse_fft(arr: np.ndarray) -> np.ndarray:
     N = arr.size
     return  inverse_fft_recursive(arr) / N
 
+def fft_2d(img: np.ndarray) -> np.ndarray:
+    # As per the assignment description:
+    # "Note that the term inside the brackets is a 1D-DFT of the rows of the 2D matrix of values f and
+    # that the outer sum is another 1D-DFT over the transformed rows performed along each column"
 
-def fft_2d():
+    # 1D-DFT (FFT) for each row of the 2D image 
+    transformed_rows = np.transpose([fft(row) for row in img]) 
+
+    # 1D-DFT (FFT) along each column of the transformed rows
+    freqs = np.transpose([fft(col) for col in transformed_rows])
+    return freqs
+
+def inverse_fft_2d(freqs: np.ndarray) -> np.ndarray:
+    # Similar approach to fft_2d() but using inverse_fft() instead
+
+    # 1D-IDFT (IFFT) for each row of the frequency domain  
+    transformed_rows = np.transpose([inverse_fft(row) for row in freqs])
+
+    # 1D-IDFT (IFFT) along each column of the transformed rows
+    img = np.transpose([inverse_fft(row) for row in transformed_rows])
+    return img
+
+def denoising_img():
     return None
 
-def inverse_fft_2d():
+def compress_img():
+    return None
+
+def load_img():
     return None
 
 def main():
-    x = np.random.rand(8)
-
-    X = fft(x)
-    x_reconstructed = inverse_fft(X)
-
-
-    print("original:", x)
-    print("reconstructed:", np.real_if_close(x_reconstructed))
-    print("close?", np.allclose(x, x_reconstructed))
+    return None
 
 
 if __name__ == "__main__":

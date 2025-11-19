@@ -182,7 +182,7 @@ def mode_1_fft_img(img: np.ndarray) -> np.ndarray:
 
     plt.show()
 
-def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.98) -> np.ndarray:
+def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) -> np.ndarray:
     """
     Denoises and displays the image by removing high frequency components in the frequency domain
     """
@@ -206,7 +206,7 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.98) 
     # Compute the inverse 2D FFT to get back the filtered original image
     denoised_img = inverse_fft_2d(fast_fourier_transformed_img)
 
-    # Compute and display the number of non-zero frequency components remaining after denoising
+    # Count and display the number of non-zero frequency components remaining after denoising
     count_non_zero = np.count_nonzero(fast_fourier_transformed_img)
     num_coefs = fast_fourier_transformed_img.size
     ratio_non_zero = count_non_zero / num_coefs
@@ -271,7 +271,7 @@ def main():
     if args.m == 1:
         mode_1_fft_img(source_img)
     elif args.m == 2:
-        mode_2_denoise_img(source_img, 0.95)
+        mode_2_denoise_img(source_img, 0.85)
     elif args.m == 3:
         return None
     elif args.m == 4:

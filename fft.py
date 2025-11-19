@@ -226,7 +226,45 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) 
     plt.imshow(np.abs(denoised_img), cmap='gray')
     plt.show()
 
-def mode_3_compress_img():
+def mode_3_compress_img(img: np.ndarray):
+    thresholds = [0, 50, 75, 90, 99, 99.9]  # Percentiles for compression levels
+    # take the FFT of the image to compress.
+    fast_fourier_transformed_img = fft_2d(img)
+
+
+    # compression comes from setting some Fourier coefficients to zero
+    # 1. you can threshold the coefficients magnitude and take only the largest percentile of them
+    for threshold in thresholds:
+        # Determine the magnitude threshold for the current percentile
+        magnitude_threshold = np.percentile(np.abs(fast_fourier_transformed_img), threshold)
+
+        # Create a copy of the FFT coefficients to modify
+        compressed_coeffs = np.copy(fast_fourier_transformed_img)
+
+        # Set coefficients with magnitude below the threshold to zero
+        compressed_coeffs[np.abs(compressed_coeffs) < magnitude_threshold] = 0
+
+        # Take the inverse FFT to reconstruct the compressed image
+        compressed_img = inverse_fft_2d(compressed_coeffs)
+
+        # Count and print the number of non-zero coefficients
+        count_non_zero = np.count_nonzero(compressed_coeffs)
+        print(f"Threshold: {threshold}%, Non-zero coefficients: {count_non_zero}")
+
+        # Display the compressed image
+        plt.subplot(2, 3, thresholds.index(threshold) + 1)
+        plt.title(f"Compression: {threshold}%")
+        plt.imshow(np.abs(compressed_img), cmap='gray')
+
+
+
+    # Then, display a 2X3 subplot of the image at 6 different compression levels starting from original image (no compression)
+    # all the way to 99.9% of the coefficients set to zero.
+    # To obtain the image back from the compressed Fourier coefficients, take the inverse FFT of the modified coefficients.
+
+    # Should also print in the command line the number of non zeros that are in each of the 6 images.
+    # Gives an idea of how much memory is being saved ^^^
+
     return None
 
 def mode_4_plot_runtimes():
@@ -274,7 +312,7 @@ def main():
     elif args.m == 2:
         mode_2_denoise_img(source_img, 0.85)
     elif args.m == 3:
-        return None
+        mode_3_compress_img(source_img)
     elif args.m == 4:
         return None
     else :

@@ -13,6 +13,9 @@ from matplotlib.colors import LogNorm
 # -----------------------------------------------------------------------------------------------------------------------#
 # -----------------------------------------------------------------------------------------------------------------------#
 def dft(arr: np.ndarray) -> np.ndarray:
+    """
+    Naive DFT algorithm implementation
+    """
     N = arr.size
     n = np.arange(N)
     k = np.reshape(n, (N, 1))
@@ -23,14 +26,20 @@ def dft(arr: np.ndarray) -> np.ndarray:
     return X_k
 
 def fft(arr: np.ndarray) -> np.ndarray:
+    """
+    Cooley-Tukey FFT algorithm implementation
+    """
     N = arr.size
 
+    # Base Case
     if N <= 1:
         return arr
     
+    # Split the sum in the even and odd indices
     even_indices = fft(arr[0::2])
     odd_indices = fft(arr[1::2])
 
+    # Initialize the result array
     result = np.zeros(N, dtype=complex)
     for k in range(N // 2):
         e = np.exp((-2j * np.pi * k) / N)
@@ -39,8 +48,11 @@ def fft(arr: np.ndarray) -> np.ndarray:
     return result
 
 def inverse_fft(arr: np.ndarray) -> np.ndarray:
-    # Define an inner recursive function for inverse FFT to 
-    # handle the divide and conquer approach
+    """
+    Inverse Cooley-Tukey FFT algorithm implementation
+    """
+    # Defined an inner recursive function for inverse FFT to 
+    # return the result prior to scaling by 1/N
     def inverse_fft_recursive(arr: np.ndarray) -> np.ndarray:
         N = arr.size
 
@@ -48,9 +60,11 @@ def inverse_fft(arr: np.ndarray) -> np.ndarray:
         if N <= 1:
             return arr
         
+        # Split the sum in the even and odd indices
         even_indices = inverse_fft_recursive(arr[0::2])
         odd_indices = inverse_fft_recursive(arr[1::2])
 
+        # Initialize the result array
         result = np.zeros(N, dtype=complex)
         for k in range(N // 2):
             e = np.exp((2j * np.pi * k) / N)
@@ -63,33 +77,64 @@ def inverse_fft(arr: np.ndarray) -> np.ndarray:
     return  inverse_fft_recursive(arr) / N
 
 def fft_2d(img: np.ndarray) -> np.ndarray:
+    """
+    2D FFT implementation using the Cooley-Tukey algorithm
+    """
     # As per the assignment description:
     # "Note that the term inside the brackets is a 1D-DFT of the rows of the 2D matrix of values f and
     # that the outer sum is another 1D-DFT over the transformed rows performed along each column"
 
-    # 1D-DFT (FFT) for each row of the 2D image 
+    # FFT for each row of the image 
     transformed_rows = np.transpose([fft(row) for row in img]) 
 
-    # 1D-DFT (FFT) along each column of the transformed rows
+    # FFT along each column of the transformed rows
+    # Taking the 2D FFT returns the frequency domain representation of the provided image
     freqs = np.transpose([fft(col) for col in transformed_rows])
     return freqs
 
-def inverse_fft_2d(freqs: np.ndarray) -> np.ndarray:
-    # Similar approach to fft_2d() but using inverse_fft() instead
+def dft_2d(img: np.ndarray) -> np.ndarray:
+    """
+    2D DFT implementation using the naive DFT algorithm
+    """
+    # As per the assignment description:
+    # "Note that the term inside the brackets is a 1D-DFT of the rows of the 2D matrix of values f and
+    # that the outer sum is another 1D-DFT over the transformed rows performed along each column"
 
-    # 1D-IDFT (IFFT) for each row of the frequency domain  
+    # DFT for each row of the image
+    transformed_rows = np.transpose([dft(row) for row in img])
+
+    # DFT along each column of the transformed rows
+    # Taking the 2D DFT returns the frequency domain representation of the provided image
+    freqs = np.transpose([dft(col) for col in transformed_rows])
+    return freqs
+
+def inverse_fft_2d(freqs: np.ndarray) -> np.ndarray:
+    """
+    2D Inverse FFT implementation using the Cooley-Tukey algorithm
+    """
+    # Similar approach to fft_2d() but using inverse_fft() instead of fft()
+
+    # IFFT for each row of the frequency domain  
     transformed_rows = np.transpose([inverse_fft(row) for row in freqs])
 
-    # 1D-IDFT (IFFT) along each column of the transformed rows
+    # IFFT along each column of the transformed rows
+    # Taking the 2D inverse FFT returns the original image
     img = np.transpose([inverse_fft(row) for row in transformed_rows])
     return img
 
 def is_power_of_2(n: int) -> bool:
-    # A number n is a power of 2 iff it is positive and only a single bit 
-    # is set in its binary representation. We can easily check this with a bitwise AND operations
+    """
+    Checks if a number is a power of 2
+    """
+    # A number n is a power of 2 iff it is positive and only a single bit is set 
+    # in its binary representation. We can easily check this with a bitwise AND operation
     return (n > 0) and (n & (n - 1) == 0)
 
 def load_img(img_path: str) -> np.ndarray:
+    """
+    Loads an image in grayscale from the specified path and resizes it to have
+    dimensions that are powers of 2 (if necessary).
+    """
     # Read the image using cv2
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
@@ -117,32 +162,81 @@ def load_img(img_path: str) -> np.ndarray:
 # -----------------------------------------------------------------------------------------------------------------------#
 
 def mode_1_fft_img(img: np.ndarray) -> np.ndarray:
-    # Obtain the 2D FFT of the image
+    """
+    Computes and displays the FFT of the provided image
+    """
+    # Compute the 2D FFT of the image
     fast_fourier_transformed_img = fft_2d(img)
 
     # Output a one by two subplot of the original image and next to it its Fourier transform
     # Plot original image
     plt.subplot(1, 2, 1)
-    plt.title("Original Image", fontweight="bold")
+    plt.title("Original Image")
     plt.imshow(img, cmap='gray')
 
     # Plot 2D Fast Fourier Transformed image
     plt.subplot(1, 2, 2)
-    plt.title("Fast Fourier Transform (FFT) of Image (Log Scaled)", fontweight="bold")
+    plt.title("FFT of Original Image (Log Scaled)")
     plt.imshow(np.abs(fast_fourier_transformed_img), cmap='gray', norm=LogNorm())
 
     plt.show()
 
-def mode_2_denoise_img():
+def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.98) -> np.ndarray:
+    """
+    Denoises and displays the image by removing high frequency components in the frequency domain
+    """
+    # Compute 2D FFT of the image
+    fast_fourier_transformed_img = fft_2d(img)
+
+    # After acquiring the 2D FFT, the low frequency components are located at the four corners 
+    # of the fourier transform's frequency domain while the high frequency components are located in the center. We will 
+    # therefore only keep a percentage of the low frequency components in the 4 corners and set the 
+    # specified percentage of the high frequency components in the center to 0
+    num_rows, num_cols = fast_fourier_transformed_img.shape
+
+    # We set all rows with indices between num_rows*(1-high_frec_percent_remove) and num_rows*high_frec_percent_remove to 0
+    # in order to remove a specified percentage (high_frec_percent_remove) of the high frequency components
+    fast_fourier_transformed_img[int(num_rows*(1-high_frec_percent_remove)):int(num_rows*high_frec_percent_remove)] = 0
+
+    # We set all cols with indices between num_cols*(1-high_frec_percent_remove) and num_cols*high_frec_percent_remove to 0
+    # in order to remove a specified percentage (high_frec_percent_remove) of the high frequency components
+    fast_fourier_transformed_img[:, int(num_cols*(1-high_frec_percent_remove)):int(num_cols*high_frec_percent_remove)] = 0
+
+    # Compute the inverse 2D FFT to get back the filtered original image
+    denoised_img = inverse_fft_2d(fast_fourier_transformed_img)
+
+    # Output a one by two subplot of the original image and next to it its denoised version
+    # Plot original image
+    plt.subplot(1, 2, 1)
+    plt.title("Original Image")
+    plt.imshow(img, cmap='gray')
+
+    # Plot denoised image
+    plt.subplot(1, 2, 2)
+    plt.title("Denoised Image")
+    plt.imshow(np.abs(denoised_img), cmap='gray')
+    plt.show()
+
+def mode_3_compress_img():
     return None
 
-def compress_img():
+def mode_4_plot_runtimes():
     return None
 
 def parse_command_line_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", help="Mode to run program in", type=int, action="store", default=1)
-    parser.add_argument("-i", help="Filename of the image we wish to take the DFT of", type=str, action="store", default="./assets/moonlanding.png")
+    parser.add_argument(
+        "-m", 
+        help="Mode to run program in: 1 = FFT Display, 2 = Denoising, 3 = Compression, 4 = Plotting Runtimes", 
+        type=int, 
+        action="store", 
+        default=1)
+    parser.add_argument(
+        "-i", 
+        help="Filename of the image we wish to take the DFT of. Default is ./assets/moonlanding.png", 
+        type=str, 
+        action="store", 
+        default="./assets/moonlanding.png")
     args = parser.parse_args()
     return args
 
@@ -169,7 +263,7 @@ def main():
     if args.m == 1:
         mode_1_fft_img(source_img)
     elif args.m == 2:
-        return None
+        mode_2_denoise_img(source_img, 0.95)
     elif args.m == 3:
         return None
     elif args.m == 4:
@@ -178,9 +272,6 @@ def main():
         print("Invalid mode selected. Please choose a mode between 1 and 4.")
         return None
     
-
-
-
 
 if __name__ == "__main__":
     main()

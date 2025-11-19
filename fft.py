@@ -20,7 +20,7 @@ def dft(arr: np.ndarray) -> np.ndarray:
     n = np.arange(N)
     k = np.reshape(n, (N, 1))
 
-    e = np.exp(-2j * np.pi * k * n / N)
+    e = np.exp((-2j * np.pi * k * n) / N)
 
     X_k = np.dot(e, arr)
     return X_k
@@ -72,7 +72,8 @@ def inverse_fft(arr: np.ndarray) -> np.ndarray:
             result[k + N // 2] = even_indices[k] - e * odd_indices[k]
         return result
 
-    # Want to normalize the result returned by inverse_fft_recursive
+    # Want to normalize/scale the result returned by 
+    # inverse_fft_recursive by 1/N
     N = arr.size
     return  inverse_fft_recursive(arr) / N
 
@@ -84,10 +85,10 @@ def fft_2d(img: np.ndarray) -> np.ndarray:
     # "Note that the term inside the brackets is a 1D-DFT of the rows of the 2D matrix of values f and
     # that the outer sum is another 1D-DFT over the transformed rows performed along each column"
 
-    # FFT for each row of the image 
+    # FFT for each row of the image & transpose the result
     transformed_rows = np.transpose([fft(row) for row in img]) 
 
-    # FFT along each column of the transformed rows
+    # FFT along each column of the transformed + transposed rows
     # Taking the 2D FFT returns the frequency domain representation of the provided image
     freqs = np.transpose([fft(col) for col in transformed_rows])
     return freqs
@@ -100,10 +101,10 @@ def dft_2d(img: np.ndarray) -> np.ndarray:
     # "Note that the term inside the brackets is a 1D-DFT of the rows of the 2D matrix of values f and
     # that the outer sum is another 1D-DFT over the transformed rows performed along each column"
 
-    # DFT for each row of the image
+    # DFT for each row of the image & transpose the result
     transformed_rows = np.transpose([dft(row) for row in img])
 
-    # DFT along each column of the transformed rows
+    # DFT along each column of the transformed + transposed rows
     # Taking the 2D DFT returns the frequency domain representation of the provided image
     freqs = np.transpose([dft(col) for col in transformed_rows])
     return freqs
@@ -114,10 +115,10 @@ def inverse_fft_2d(freqs: np.ndarray) -> np.ndarray:
     """
     # Similar approach to fft_2d() but using inverse_fft() instead of fft()
 
-    # IFFT for each row of the frequency domain  
+    # IFFT for each row of the frequency domain & transpose the result
     transformed_rows = np.transpose([inverse_fft(row) for row in freqs])
 
-    # IFFT along each column of the transformed rows
+    # IFFT along each column of the transformed + transposed rows
     # Taking the 2D inverse FFT returns the original image
     img = np.transpose([inverse_fft(row) for row in transformed_rows])
     return img

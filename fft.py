@@ -186,6 +186,7 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) 
     """
     Denoises and displays the image by removing high frequency components in the frequency domain
     """
+    # Code Reference: https://scipy-lectures.org/intro/scipy/auto_examples/solutions/plot_fft_image_denoise.html
     # Compute 2D FFT of the image
     fast_fourier_transformed_img = fft_2d(img)
 

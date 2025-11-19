@@ -206,6 +206,13 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.98) 
     # Compute the inverse 2D FFT to get back the filtered original image
     denoised_img = inverse_fft_2d(fast_fourier_transformed_img)
 
+    # Compute and display the number of non-zero frequency components remaining after denoising
+    count_non_zero = np.count_nonzero(fast_fourier_transformed_img)
+    num_coefs = fast_fourier_transformed_img.size
+    ratio_non_zero = count_non_zero / num_coefs
+    print(f"Number of non-zero frequency components after denoising: {count_non_zero}")
+    print(f"Ratio of non-zero frequency components after denoising: {ratio_non_zero:.2%}")
+
     # Output a one by two subplot of the original image and next to it its denoised version
     # Plot original image
     plt.subplot(1, 2, 1)

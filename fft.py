@@ -4,6 +4,7 @@ import argparse
 import cv2
 import os
 from matplotlib.colors import LogNorm
+import time
 
 # -----------------------------------------------------------------------------------------------------------------------#
 # -----------------------------------------------------------------------------------------------------------------------#
@@ -235,19 +236,17 @@ def mode_3_compress_img(img: np.ndarray):
     # compression comes from setting some Fourier coefficients to zero
     # 1. you can threshold the coefficients magnitude and take only the largest percentile of them
     for threshold in thresholds:
-        # Determine the magnitude threshold for the current percentile
+        #determine the magnitude threshold for the current percentile
         magnitude_threshold = np.percentile(np.abs(fast_fourier_transformed_img), threshold)
 
-        # Create a copy of the FFT coefficients to modify
         compressed_coeffs = np.copy(fast_fourier_transformed_img)
 
-        # Set coefficients with magnitude below the threshold to zero
+        #set coefficients with magnitude below the threshold to zero
         compressed_coeffs[np.abs(compressed_coeffs) < magnitude_threshold] = 0
 
-        # Take the inverse FFT to reconstruct the compressed image
         compressed_img = inverse_fft_2d(compressed_coeffs)
 
-        # Count and print the number of non-zero coefficients
+        #count and print the number of nonzero coefficients
         count_non_zero = np.count_nonzero(compressed_coeffs)
         print(f"Threshold: {threshold}%, Non-zero coefficients: {count_non_zero}")
 
@@ -256,18 +255,72 @@ def mode_3_compress_img(img: np.ndarray):
         plt.title(f"Compression: {threshold}%")
         plt.imshow(np.abs(compressed_img), cmap='gray')
 
+        #save each figure individually
+        plt.figure()  
+        plt.title(f"Compression: {threshold}%")
+        plt.imshow(np.abs(compressed_img), cmap='gray')
+        plt.savefig(f"assets/compressed_image_{threshold}percent.png", dpi=300)  # Save the figure
+        plt.close() 
 
+    plt.show()
 
-    # Then, display a 2X3 subplot of the image at 6 different compression levels starting from original image (no compression)
-    # all the way to 99.9% of the coefficients set to zero.
-    # To obtain the image back from the compressed Fourier coefficients, take the inverse FFT of the modified coefficients.
-
-    # Should also print in the command line the number of non zeros that are in each of the 6 images.
-    # Gives an idea of how much memory is being saved ^^^
+   
 
     return None
 
 def mode_4_plot_runtimes():
+    
+    sizes = [2**i for i in range(5, 11)]  
+    num_trials = 10  
+    confidence_interval = 2  # 97% confidence interval (2 * std deviation)
+
+    dft_means = []
+    dft_stds = []
+    fft_means = []
+    fft_stds = []
+
+    for size in sizes:
+        dft_runtimes = []
+        fft_runtimes = []
+
+        for _ in range(num_trials):
+            print(f"Running trial for size {size}x{size}...")
+            random_array = np.random.rand(size, size)
+
+            start_time = time.time()
+            dft_2d(random_array)
+            dft_runtimes.append(time.time() - start_time)
+
+            start_time = time.time()
+            fft_2d(random_array)
+            fft_runtimes.append(time.time() - start_time)
+
+        dft_means.append(np.mean(dft_runtimes))
+        dft_stds.append(np.std(dft_runtimes))
+
+        fft_means.append(np.mean(fft_runtimes))
+        fft_stds.append(np.std(fft_runtimes))
+
+    # Plot the results
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(sizes, dft_means, yerr=[confidence_interval * std for std in dft_stds],
+                 label="Naive DFT", fmt='-o', capsize=5)
+    plt.errorbar(sizes, fft_means, yerr=[confidence_interval * std for std in fft_stds],
+                 label="FFT", fmt='-o', capsize=5)
+
+    plt.xlabel("Problem Size (N x N)")
+    plt.ylabel("Runtime (seconds)")
+    plt.title("Runtime Comparison: Naive DFT vs FFT")
+    plt.xscale("log", base=2)  # Log scale for x-axis (powers of 2)
+    plt.yscale("log")  # Log scale for y-axis
+    plt.legend()
+    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    plt.savefig("assets/runtime_comparison.png", dpi=300)  # Save the plot as a high-quality PNG
+    plt.show()
+
+    print("Runtime comparison plot saved as 'runtime_comparison.png'.")
+
+
     return None
 
 def parse_command_line_args():
@@ -314,7 +367,7 @@ def main():
     elif args.m == 3:
         mode_3_compress_img(source_img)
     elif args.m == 4:
-        return None
+        mode_4_plot_runtimes()
     else :
         print("Invalid mode selected. Please choose a mode between 1 and 4.")
         return None

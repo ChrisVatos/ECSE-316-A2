@@ -2,16 +2,15 @@
 ## Chrisovalantis Vatos (260989496)						 
 ## Sadek Mahmood (261053809)	
 
-## Installation
+## Installing Dependencies
 
-Ensure Python 3.5+ is installed.
-Dependencies used for this assignment include:
+Ensure Python 3.5+ is installed. The dependencies used for this assignment include:
 - numpy
 - matplotlib
 - opencv-python 
 - pytest
 
-Install dependencies using:
+Install dependencies using the following command line call:
 
 ```bash
 pip install -r requirements.txt
@@ -26,19 +25,18 @@ python fft.py [-m mode] [-i image]
 ```
 
 **mode (optional):**
-- [1] (Default) for fast mode where the image is converted into its FFT form and displayed
-- [2] for denoising where the image is denoised by applying an FFT, truncating high
-frequencies and then displayed
-- [3] for compressing and plot the image
-- [4] for plotting the runtime graphs for the report
+- [1] (Default) FFT + Display
+- [2] Denoising + Display
+- [3] Compression + Display
+- [4] Plotting Runtimes
 
 **image (optional):**
-- Filename of the image we wish to take the DFT of. (Default: the file name
-of the image given to you for the assignment)
+- Filename (path) of the image we wish to take the DFT of
+- Default is ./assets/moonlanding.png
 
 ## Test Execution
 
-The test suite is executed from the command line using the following syntax:
+The test suite is executed from the command line using the following:
 
 ```bash
 pytest -v

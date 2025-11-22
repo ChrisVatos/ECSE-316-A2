@@ -193,17 +193,27 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) 
 
     # After acquiring the 2D FFT, the low frequency components are located at the four corners 
     # of the fourier transform's frequency domain while the high frequency components are located in the center. We will 
-    # therefore only keep a percentage of the low frequency components in the 4 corners and set the 
-    # specified percentage of the high frequency components in the center to 0
+    # therefore zero out the set the pecified percentage of the high frequency components in the center, thus keeping only
+    # the low frequency components located at the corners of the frequency domain.
     num_rows, num_cols = fast_fourier_transformed_img.shape
 
-    # We set all rows with indices between num_rows*(1-high_frec_percent_remove) and num_rows*high_frec_percent_remove to 0
-    # in order to remove a specified percentage (high_frec_percent_remove) of the high frequency components
-    fast_fourier_transformed_img[int(num_rows*(1-high_frec_percent_remove)):int(num_rows*high_frec_percent_remove)] = 0
+    # Determine the number of rows and columns to remove based on the specified percentage (high_frec_percent_remove)
+    num_rows_remove = int(num_rows * high_frec_percent_remove)
+    num_cols_remove = int(num_cols * high_frec_percent_remove)
 
-    # We set all cols with indices between num_cols*(1-high_frec_percent_remove) and num_cols*high_frec_percent_remove to 0
+    # Based on the total number of rows and columns to remove, determine the start and end indices for each 
+    start_index_row_to_remove = int((num_rows - num_rows_remove) / 2)
+    end_index_row_to_remove = int(start_index_row_to_remove + num_rows_remove)
+    start_index_col_to_remove = int((num_cols - num_cols_remove) / 2)
+    end_index_col_to_remove = int(start_index_col_to_remove + num_cols_remove)
+
+    # We set all rows with indices between start_index_row_to_remove and end_index_row_to_remove to 0
     # in order to remove a specified percentage (high_frec_percent_remove) of the high frequency components
-    fast_fourier_transformed_img[:, int(num_cols*(1-high_frec_percent_remove)):int(num_cols*high_frec_percent_remove)] = 0
+    fast_fourier_transformed_img[start_index_row_to_remove:end_index_row_to_remove] = 0
+
+    # We set all cols with indices between start_index_col_to_remove and end_index_col_to_remove to 0
+    # in order to remove a specified percentage (high_frec_percent_remove) of the high frequency components
+    fast_fourier_transformed_img[:, start_index_col_to_remove:end_index_col_to_remove] = 0
 
     # Compute the inverse 2D FFT to get back the filtered original image
     denoised_img = inverse_fft_2d(fast_fourier_transformed_img)
@@ -211,7 +221,7 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) 
     # Count and display the number of non-zero frequency components remaining after denoising
     count_non_zero = np.count_nonzero(fast_fourier_transformed_img)
     num_coefs = fast_fourier_transformed_img.size
-    ratio_non_zero = count_non_zero / num_coefs
+    ratio_non_zero = count_non_zero / num_coefs # This also represents the ratio of low frequency components kept after denoising
     print(f"Number of non-zero frequency components after denoising: {count_non_zero}")
     print(f"Ratio of non-zero frequency components after denoising: {ratio_non_zero:.2%}")
 
@@ -223,7 +233,7 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) 
 
     # Plot denoised image
     plt.subplot(1, 2, 2)
-    plt.title("Denoised Image")
+    plt.title(f"Denoised Image: Removed {high_frec_percent_remove:.1%} of High Frequencies")
     plt.imshow(np.abs(denoised_img), cmap='gray')
     plt.show()
 

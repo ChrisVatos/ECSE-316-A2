@@ -4,6 +4,11 @@ import argparse
 import cv2
 import os
 from matplotlib.colors import LogNorm
+import time
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+warnings.filterwarnings("ignore")
 
 # -----------------------------------------------------------------------------------------------------------------------#
 # -----------------------------------------------------------------------------------------------------------------------#
@@ -236,10 +241,105 @@ def mode_2_denoise_img(img: np.ndarray, high_frec_percent_remove: float = 0.95) 
     plt.imshow(np.abs(denoised_img), cmap='gray')
     plt.show()
 
-def mode_3_compress_img():
+def mode_3_compress_img(img: np.ndarray):
+    thresholds = [0, 50, 75, 90, 99, 99.9]  # Percentiles for compression levels
+    # take the FFT of the image to compress.
+    fast_fourier_transformed_img = fft_2d(img)
+
+
+    # compression comes from setting some Fourier coefficients to zero
+    # 1. you can threshold the coefficients magnitude and take only the largest percentile of them
+    for threshold in thresholds:
+        #determine the magnitude threshold for the current percentile
+        magnitude_threshold = np.percentile(np.abs(fast_fourier_transformed_img), threshold)
+
+        compressed_coeffs = np.copy(fast_fourier_transformed_img)
+
+        #set coefficients with magnitude below the threshold to zero
+        compressed_coeffs[np.abs(compressed_coeffs) < magnitude_threshold] = 0
+
+        compressed_img = inverse_fft_2d(compressed_coeffs)
+
+        #count and print the number of nonzero coefficients
+        count_non_zero = np.count_nonzero(compressed_coeffs)
+        print(f"Threshold: {threshold}%, Non-zero coefficients: {count_non_zero}")
+
+        sparse_matrix_path = f"assets/compressed_coeffs_{threshold}percent.npz"
+        np.savez_compressed(sparse_matrix_path, compressed_coeffs=compressed_coeffs)
+        sparse_matrix_size = os.path.getsize(sparse_matrix_path) / 1024  # Size in KB
+        print(f"Threshold: {threshold}%, Sparse matrix size: {sparse_matrix_size:.2f} KB")
+
+        # Display the compressed image
+        plt.subplot(2, 3, thresholds.index(threshold) + 1)
+        plt.title(f"Compression: {threshold}%")
+        plt.imshow(np.abs(compressed_img), cmap='gray')
+
+        #save each figure individually
+        plt.figure()  
+        plt.title(f"Compression: {threshold}%")
+        plt.imshow(np.abs(compressed_img), cmap='gray')
+        plt.savefig(f"assets/compressed_image_{threshold}percent.png", dpi=300)  # Save the figure
+        plt.close() 
+
+    plt.show()
+
+   
+
     return None
 
 def mode_4_plot_runtimes():
+    
+    sizes = [2**i for i in range(5, 11)]  
+    num_trials = 10  
+    confidence_interval = 2  # 97% confidence interval (2 * std deviation)
+
+    dft_means = []
+    dft_stds = []
+    fft_means = []
+    fft_stds = []
+
+    for size in sizes:
+        dft_runtimes = []
+        fft_runtimes = []
+
+        for _ in range(num_trials):
+            print(f"Running trial for size {size}x{size}...")
+            random_array = np.random.rand(size, size)
+
+            start_time = time.time()
+            dft_2d(random_array)
+            dft_runtimes.append(time.time() - start_time)
+
+            start_time = time.time()
+            fft_2d(random_array)
+            fft_runtimes.append(time.time() - start_time)
+
+        dft_means.append(np.mean(dft_runtimes))
+        dft_stds.append(np.std(dft_runtimes))
+
+        fft_means.append(np.mean(fft_runtimes))
+        fft_stds.append(np.std(fft_runtimes))
+
+    # Plot the results
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(sizes, dft_means, yerr=[confidence_interval * std for std in dft_stds],
+                 label="Naive DFT", fmt='-o', capsize=5)
+    plt.errorbar(sizes, fft_means, yerr=[confidence_interval * std for std in fft_stds],
+                 label="FFT", fmt='-o', capsize=5)
+
+    plt.xlabel("Problem Size (N x N)")
+    plt.ylabel("Runtime (seconds)")
+    plt.title("Runtime Comparison: Naive DFT vs FFT")
+    plt.xscale("log", base=2)  # Log scale for x-axis (powers of 2)
+    plt.yscale("log")  # Log scale for y-axis
+    plt.legend()
+    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    plt.savefig("assets/runtime_comparison.png", dpi=300)  # Save the plot as a high-quality PNG
+    plt.show()
+
+    print("Runtime comparison plot saved as 'runtime_comparison.png'.")
+
+
     return None
 
 def parse_command_line_args():
@@ -263,6 +363,7 @@ def main():
     # Parse the command line arguments m (mode) and i (image)
     args = parse_command_line_args()
 
+
     # Ensure input image exists before calling corresponding functions based on mode
     # Check if the provided image path exsists; display error message if it does not
     # or if there was an error loading the image
@@ -284,9 +385,9 @@ def main():
     elif args.m == 2:
         mode_2_denoise_img(source_img, 0.925)
     elif args.m == 3:
-        return None
+        mode_3_compress_img(source_img)
     elif args.m == 4:
-        return None
+        mode_4_plot_runtimes()
     else :
         print("Invalid mode selected. Please choose a mode between 1 and 4.")
         return None

@@ -5,6 +5,10 @@ import cv2
 import os
 from matplotlib.colors import LogNorm
 import time
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+warnings.filterwarnings("ignore")
 
 # -----------------------------------------------------------------------------------------------------------------------#
 # -----------------------------------------------------------------------------------------------------------------------#
@@ -260,6 +264,11 @@ def mode_3_compress_img(img: np.ndarray):
         count_non_zero = np.count_nonzero(compressed_coeffs)
         print(f"Threshold: {threshold}%, Non-zero coefficients: {count_non_zero}")
 
+        sparse_matrix_path = f"assets/compressed_coeffs_{threshold}percent.npz"
+        np.savez_compressed(sparse_matrix_path, compressed_coeffs=compressed_coeffs)
+        sparse_matrix_size = os.path.getsize(sparse_matrix_path) / 1024  # Size in KB
+        print(f"Threshold: {threshold}%, Sparse matrix size: {sparse_matrix_size:.2f} KB")
+
         # Display the compressed image
         plt.subplot(2, 3, thresholds.index(threshold) + 1)
         plt.title(f"Compression: {threshold}%")
@@ -353,6 +362,7 @@ def parse_command_line_args():
 def main():
     # Parse the command line arguments m (mode) and i (image)
     args = parse_command_line_args()
+
 
     # Ensure input image exists before calling corresponding functions based on mode
     # Check if the provided image path exsists; display error message if it does not
